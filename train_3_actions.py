@@ -14,8 +14,15 @@ from gym.spaces import Box
 
 class CustomWrapper(gym.Wrapper):
     # def __init__(self, env):
-    #     super().__init__(env)
-
+    #     # super().__init__(env)
+    #     low = self.action_space.low[:3]
+    #     high = self.action_space.high[:3]
+    #     self.action_space = spaces.Box(
+    #          low,
+    #          high,
+    #         #  shape=env.action_space.shape,
+    #          dtype=env.action_space.dtype,
+    #      )
     #state space
     # Num	    Observation	                Min	    Max 	Mean
     # 0        	hull_angle	                0	    2*pi	0.5
@@ -44,8 +51,8 @@ class CustomWrapper(gym.Wrapper):
     def __init__(
         self,
         env: gym.Env,
-        min_action: Union[float, int, np.ndarray],
-        max_action: Union[float, int, np.ndarray],
+        # min_action: Union[float, int, np.ndarray],
+        # max_action: Union[float, int, np.ndarray],
     ):
         """Initializes the :class:`RescaleAction` wrapper.
         Args:
@@ -53,59 +60,68 @@ class CustomWrapper(gym.Wrapper):
             min_action (float, int or np.ndarray): The min values for each action. This may be a numpy array or a scalar.
             max_action (float, int or np.ndarray): The max values for each action. This may be a numpy array or a scalar.
         """
-        assert isinstance(
-            env.action_space, spaces.Box
-        ), f"expected Box action space, got {type(env.action_space)}"
-        assert np.less_equal(min_action, max_action).all(), (min_action, max_action)
+        # assert isinstance(
+        #     env.action_space, spaces.Box
+        # ), f"expected Box action space, got {type(env.action_space)}"
+        # assert np.less_equal(min_action, max_action).all(), (min_action, max_action)
 
         super().__init__(env)
-        self.min_action = (
-            np.zeros(env.action_space.shape, dtype=env.action_space.dtype) + min_action
-        )
-        self.max_action = (
-            np.zeros(env.action_space.shape, dtype=env.action_space.dtype) + max_action
-        )
+        # self.min_action = (
+        #     np.zeros(env.action_space.shape, dtype=env.action_space.dtype) + min_action
+        # )
+        # self.max_action = (
+        #     np.zeros(env.action_space.shape, dtype=env.action_space.dtype) + max_action
+        # )
+        low = self.action_space.low[:3]
+        new_low = np.append(low,0)
+        high = self.action_space.high[:3]
+        new_high = np.append(high,0)
         self.action_space = spaces.Box(
-            low=min_action,
-            high=max_action,
-            shape=env.action_space.shape,
+            new_low,
+            new_high,
+            # shape=env.action_space.shape,
             dtype=env.action_space.dtype,
         )
-        # low = np.append(self.observation_space.low, 0.0)
-        low = self.observation_space.low[:19]
-        # high = np.append(self.observation_space.high, np.inf)
-        high = self.observation_space.high[:19]
-        self.observation_space = Box(low, high, dtype=np.float32)
+        # # low = np.append(self.observation_space.low, 0.0)
+        # low = self.observation_space.low[:19]
+        # # high = np.append(self.observation_space.high, np.inf)
+        # high = self.observation_space.high[:19]
+        # self.observation_space = Box(low, high, dtype=np.float32)
     def step(self, action):
         # modify obs
         obs, reward, terminated, info = self.env.step(action)
-        obs = obs[:19]
+        # obs = obs[:19]
         return obs, reward, terminated, info
 
     def reset(self):
         obs = self.env.reset()
-        obs = obs[:19]
+        # obs = obs[:19]
         return obs
 
-    def action(self, action):
-        """Rescales the action affinely from  [:attr:`min_action`, :attr:`max_action`] to the action space of the base environment, :attr:`env`.
-        Args:
-            action: The action to rescale
-        Returns:
-            The rescaled action
-        """
-        assert np.all(np.greater_equal(action, self.min_action)), (
-            action,
-            self.min_action,
-        )
-        assert np.all(np.less_equal(action, self.max_action)), (action, self.max_action)
-        low = self.env.action_space.low
-        high = self.env.action_space.high
-        action = low + (high - low) * (
-            (action - self.min_action) / (self.max_action - self.min_action)
-        )
-        action = np.clip(action, low, high)
-        return action
+    # def action(self, action):
+    #     """Rescales the action affinely from  [:attr:`min_action`, :attr:`max_action`] to the action space of the base environment, :attr:`env`.
+    #     Args:
+    #         action: The action to rescale
+    #     Returns:
+    #         The rescaled action
+    #     """
+    #     assert np.all(np.greater_equal(action, self.min_action)), (
+    #         action,
+    #         self.min_action,
+    #     )
+    #     assert np.all(np.less_equal(action, self.max_action)), (action, self.max_action)
+    #     low = self.env.action_space.low
+    #     high = self.env.action_space.high
+    #     action = low + (high - low) * (
+    #         (action - self.min_action) / (self.max_action - self.min_action)
+    #     )
+    #     action = np.clip(action, low, high)
+    #     return action
+
+    def action(self,action):
+        reduced_action = action[:3]
+        new_action = np.append(reduced_action,0)
+        return new_action
 
 
 
@@ -115,14 +131,15 @@ class CustomWrapper(gym.Wrapper):
 ######### Hyperparameters #########
 gym.logger.set_level(40)
 env_name = "BipedalWalker-v3"
-env = CustomWrapper(gym.make(env_name),  min_action = -0.5,  max_action = 0.5)
+env = CustomWrapper(gym.make(env_name))
 # env = gym.make(env_name)
 state_dim = env.observation_space.shape[0]
 print('state dimensions', state_dim)
 # state_dim = 20
 action_dim = env.action_space.shape[0]
+print('action space', action_dim)
 max_action = float(env.action_space.high[0])
-print('max action', max_action)
+
 # print('obs space ',env.observation_space.shape[0])
 # print('action space high',env.action_space.high)
 log_interval = 100  # print avg reward after interval
@@ -137,7 +154,7 @@ noise_clip = 0.3
 policy_delay = 2  # delayed policy updates parameter
 max_episodes = 10000  # max num of episodes
 max_timesteps = 2000  # max timesteps in one episode
-directory = "./preTrained/"  # save trained models
+directory = "./preTrained_3_action/"  # save trained models
 filename = "TD3_{}_{}".format(env_name, random_seed)
 
 start_episode = 0
@@ -215,7 +232,7 @@ for ep in range(start_episode + 1, max_episodes + 1):
     last_distance.append(total_distance)
     mean_score = np.mean(last_scores)
     mean_distance = np.mean(last_distance)
-    FILE = 'record.dat'
+    FILE = 'record_3_action.dat'
     data = [ep, total_reward, total_distance, mean_loss_actor, mean_loss_c1, mean_loss_c2]
     with open(FILE, "ab") as f:
         pickle.dump(data, f)
@@ -234,7 +251,7 @@ for ep in range(start_episode + 1, max_episodes + 1):
         mean_distances.append(mean_distance)
         print('\rEpisode: {}/{},\tMean Score: {:.2f},\tMean Distance: {:.2f},\tactor_loss: {},\tc1_loss:{},\tc2_loss:{}'
             .format(ep, max_episodes, mean_score, mean_distance, mean_loss_actor, mean_loss_c1, mean_loss_c2))
-        FILE = 'record_mean.dat'
+        FILE = 'record_3_action_mean.dat'
         data = [ep, mean_score, mean_distance, mean_loss_actor, mean_loss_c1, mean_loss_c2]
         with open(FILE, "ab") as f:
             pickle.dump(data, f)

@@ -71,21 +71,29 @@ class CustomWrapper(gym.Wrapper):
             shape=env.action_space.shape,
             dtype=env.action_space.dtype,
         )
-        # low = np.append(self.observation_space.low, 0.0)
-        low = self.observation_space.low[:19]
+        low = np.append(self.observation_space.low, 0.0)
+        obs1 = self.observation_space.low[:2]
+        obs2 =  self.observation_space.low[4:19] 
+        low = np.append(obs1,obs2)
         # high = np.append(self.observation_space.high, np.inf)
-        high = self.observation_space.high[:19]
+        obs1_1 = self.observation_space.high[:2]
+        obs2_1 =  self.observation_space.high[4:19] 
+        high = np.append(obs1_1,obs2_1)
         self.observation_space = Box(low, high, dtype=np.float32)
     def step(self, action):
         # modify obs
         obs, reward, terminated, info = self.env.step(action)
-        obs = obs[:19]
-        return obs, reward, terminated, info
+        obs1 = obs[:2]
+        obs2 = obs[4:19]
+        obs_new = np.append(obs1,obs2)
+        return obs_new, reward, terminated, info
 
     def reset(self):
         obs = self.env.reset()
-        obs = obs[:19]
-        return obs
+        obs1 = obs[:2]
+        obs2 = obs[4:19]
+        obs_new = np.append(obs1,obs2)
+        return obs_new
 
     def action(self, action):
         """Rescales the action affinely from  [:attr:`min_action`, :attr:`max_action`] to the action space of the base environment, :attr:`env`.
@@ -115,11 +123,11 @@ class CustomWrapper(gym.Wrapper):
 ######### Hyperparameters #########
 gym.logger.set_level(40)
 env_name = "BipedalWalker-v3"
-env = CustomWrapper(gym.make(env_name),  min_action = -0.5,  max_action = 0.5)
+env = CustomWrapper(gym.make(env_name),min_action=-1.0, max_action=1.0)
 # env = gym.make(env_name)
 state_dim = env.observation_space.shape[0]
 print('state dimensions', state_dim)
-# state_dim = 20
+# state_dim = 17
 action_dim = env.action_space.shape[0]
 max_action = float(env.action_space.high[0])
 print('max action', max_action)
@@ -137,7 +145,7 @@ noise_clip = 0.3
 policy_delay = 2  # delayed policy updates parameter
 max_episodes = 10000  # max num of episodes
 max_timesteps = 2000  # max timesteps in one episode
-directory = "./preTrained/"  # save trained models
+directory = "./preTrained_reduced_obs/"  # save trained models
 filename = "TD3_{}_{}".format(env_name, random_seed)
 
 start_episode = 0
@@ -215,7 +223,7 @@ for ep in range(start_episode + 1, max_episodes + 1):
     last_distance.append(total_distance)
     mean_score = np.mean(last_scores)
     mean_distance = np.mean(last_distance)
-    FILE = 'record.dat'
+    FILE = 'record_reduced_obs.dat'
     data = [ep, total_reward, total_distance, mean_loss_actor, mean_loss_c1, mean_loss_c2]
     with open(FILE, "ab") as f:
         pickle.dump(data, f)
@@ -234,7 +242,7 @@ for ep in range(start_episode + 1, max_episodes + 1):
         mean_distances.append(mean_distance)
         print('\rEpisode: {}/{},\tMean Score: {:.2f},\tMean Distance: {:.2f},\tactor_loss: {},\tc1_loss:{},\tc2_loss:{}'
             .format(ep, max_episodes, mean_score, mean_distance, mean_loss_actor, mean_loss_c1, mean_loss_c2))
-        FILE = 'record_mean.dat'
+        FILE = 'record_reduced_obs_mean.dat'
         data = [ep, mean_score, mean_distance, mean_loss_actor, mean_loss_c1, mean_loss_c2]
         with open(FILE, "ab") as f:
             pickle.dump(data, f)

@@ -71,20 +71,20 @@ class CustomWrapper(gym.Wrapper):
             shape=env.action_space.shape,
             dtype=env.action_space.dtype,
         )
-        # low = np.append(self.observation_space.low, 0.0)
-        low = self.observation_space.low[:19]
-        # high = np.append(self.observation_space.high, np.inf)
-        high = self.observation_space.high[:19]
-        self.observation_space = Box(low, high, dtype=np.float32)
+        # # low = np.append(self.observation_space.low, 0.0)
+        # low = self.observation_space.low[:20]
+        # # high = np.append(self.observation_space.high, np.inf)
+        # high = self.observation_space.high[:20]
+        # self.observation_space = Box(low, high, dtype=np.float32)
     def step(self, action):
         # modify obs
         obs, reward, terminated, info = self.env.step(action)
-        obs = obs[:19]
+        # obs = obs[:20]
         return obs, reward, terminated, info
 
     def reset(self):
         obs = self.env.reset()
-        obs = obs[:19]
+        # obs = obs[:20]
         return obs
 
     def action(self, action):
@@ -137,7 +137,7 @@ noise_clip = 0.3
 policy_delay = 2  # delayed policy updates parameter
 max_episodes = 10000  # max num of episodes
 max_timesteps = 2000  # max timesteps in one episode
-directory = "./preTrained/"  # save trained models
+directory = "./preTrained_reduced_action/"  # save trained models
 filename = "TD3_{}_{}".format(env_name, random_seed)
 
 start_episode = 0
@@ -215,7 +215,7 @@ for ep in range(start_episode + 1, max_episodes + 1):
     last_distance.append(total_distance)
     mean_score = np.mean(last_scores)
     mean_distance = np.mean(last_distance)
-    FILE = 'record.dat'
+    FILE = 'record_reduced_action.dat'
     data = [ep, total_reward, total_distance, mean_loss_actor, mean_loss_c1, mean_loss_c2]
     with open(FILE, "ab") as f:
         pickle.dump(data, f)
@@ -234,7 +234,7 @@ for ep in range(start_episode + 1, max_episodes + 1):
         mean_distances.append(mean_distance)
         print('\rEpisode: {}/{},\tMean Score: {:.2f},\tMean Distance: {:.2f},\tactor_loss: {},\tc1_loss:{},\tc2_loss:{}'
             .format(ep, max_episodes, mean_score, mean_distance, mean_loss_actor, mean_loss_c1, mean_loss_c2))
-        FILE = 'record_mean.dat'
+        FILE = 'record_reduced_action_mean.dat'
         data = [ep, mean_score, mean_distance, mean_loss_actor, mean_loss_c1, mean_loss_c2]
         with open(FILE, "ab") as f:
             pickle.dump(data, f)
